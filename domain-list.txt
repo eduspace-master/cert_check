@@ -1,3 +1,7 @@
 class.day
+blog.class.day
+mail.class.day
+dev.class.day
 superlearn.ing
 supercoding.net
+ondo.live
