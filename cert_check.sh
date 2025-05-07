@@ -25,6 +25,7 @@ fi
 
 check_ssl_expiry() {
   local domain=$1
+  # 인증서 만료일 확인
   expiry_date=$(openssl s_client -servername "$domain" -connect "$domain:443" < /dev/null 2>/dev/null | \
     openssl x509 -noout -enddate | cut -d= -f2)
 
@@ -32,6 +33,17 @@ check_ssl_expiry() {
     echo "SSL 정보 없음"
     echo "[$(date)] SSL check failed for $domain" >> "$LOG"
     return
+  fi
+
+  # 인증서 주체 이름 확인
+  subject=$(openssl s_client -servername "$domain" -connect "$domain:443" < /dev/null 2>/dev/null | \
+    openssl x509 -noout -subject | sed 's/^subject= //')
+
+  # 와일드카드 인증서 여부 확인
+  if [[ "$subject" == *"\*"* ]]; then
+    wildcard_status="와일드카드 인증서"
+  else
+    wildcard_status="일반 인증서"
   fi
 
   expiry_epoch=$(date -d "$expiry_date" +%s 2>/dev/null)
@@ -43,7 +55,7 @@ check_ssl_expiry() {
 
   current_epoch=$(date +%s)
   days_left=$(( (expiry_epoch - current_epoch) / 86400 ))
-  echo "$expiry_date ($days_left일 남음)"
+  echo "$expiry_date ($days_left일 남음) - $wildcard_status"
 }
 
 # 초기화
