@@ -25,7 +25,7 @@ fi
 
 check_health() {
   local domain=$1
-  if curl -s --head "https://$domain" | grep -q "200 OK"; then
+  if curl -s -X GET "https://$domain" | grep -q "200 OK"; then
     echo "OK"
   else
     echo "DOWN"
