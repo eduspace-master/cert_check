@@ -39,11 +39,14 @@ check_ssl_expiry() {
   subject=$(openssl s_client -servername "$domain" -connect "$domain:443" < /dev/null 2>/dev/null | \
     openssl x509 -noout -subject | sed 's/^subject= //')
 
-  # 와일드카드 인증서 여부 확인
-  if [[ "$subject" == *"\*"* ]]; then
-    wildcard_status="와일드카드 인증서"
+  # SAN 필드에서 와일드카드 인증서 여부 확인
+  san=$(openssl s_client -servername "$domain" -connect "$domain:443" < /dev/null 2>/dev/null | \
+    openssl x509 -noout -text | grep -A1 "Subject Alternative Name" | tail -n1)
+
+  if [[ "$san" == *"\*"* ]]; then
+    wildcard_status="wildcard"
   else
-    wildcard_status="일반 인증서"
+    wildcard_status="normal"
   fi
 
   expiry_epoch=$(date -d "$expiry_date" +%s 2>/dev/null)
