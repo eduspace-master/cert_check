@@ -80,6 +80,22 @@ done < "$DOMAINS_FILE"
   echo "To: $EMAIL"
   echo "Content-Type: text/plain; charset=UTF-8"
   echo ""
+  echo "보고서 생성 시간: $(date '+%A, %m월 %d일 %H:%M:%S KST')"  # 요일 포함
+  echo ""
+  echo "도메인명                SSL 만료일                남은 일수       인증서 유형"  # 타이틀 추가
+  echo "-------------------------------------------------------------"
+  
+  while read -r domain; do
+    ssl_info=$(check_ssl_expiry "$domain")
+    # SSL 정보에서 날짜, 남은 일수, 인증서 유형 추출
+    ssl_date=$(echo "$ssl_info" | awk '{print $1, $2, $3}')  # 날짜 부분
+    days_left=$(echo "$ssl_info" | awk '{print $4}')  # 남은 일수 부분
+    wildcard_status=$(echo "$ssl_info" | awk '{print $6, $7}')  # 인증서 유형 부분
+
+    # 출력 형식 맞추기
+    printf "%-25s %-20s %-10s %s\n" "$domain" "$ssl_date" "$days_left" "$wildcard_status" >> "$REPORT"
+  done < "$DOMAINS_FILE"
+  
   cat "$REPORT"
 ) | /usr/sbin/sendmail -t
 
