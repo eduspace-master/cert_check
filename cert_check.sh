@@ -58,15 +58,7 @@ check_ssl_expiry() {
 
 check_domain_expiry() {
   local domain=$1
-  local tld=$(echo "$domain" | awk -F. '{print $NF}')
-  local whois_server=""
-
-  if [[ "$tld" == "day" || "$tld" == "ing" ]]; then
-    whois_server="whois.nic.$tld"
-    expiry_date=$(whois -h $whois_server "$domain" | grep -iE 'Expiration Date|Registry Expiry Date|Expires on' | head -n1 | awk -F: '{print $2}' | sed 's/^ *//')
-  else
-    expiry_date=$(whois "$domain" | grep -iE 'Expiration Date|Registry Expiry Date|Expires on' | head -n1 | awk -F: '{print $2}' | sed 's/^ *//')
-  fi
+  expiry_date=$(whois "$domain" | grep -iE 'Expiration Date|Registry Expiry Date|Expires on' | head -n1 | awk -F: '{print $2}' | sed 's/^ *//')
 
   if [ -z "$expiry_date" ]; then
     echo "도메인 만료일 정보 없음"
@@ -85,7 +77,6 @@ check_domain_expiry() {
   days_left=$(( (expiry_epoch - current_epoch) / 86400 ))
   echo "$expiry_date ($days_left일 남음)"
 }
-
 # 초기화
 echo "==============================" >> "$LOG"
 echo "스크립트 실행: $(date)" >> "$LOG"
