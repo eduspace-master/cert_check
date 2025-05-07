@@ -12,15 +12,11 @@ EMAIL="oci@superlearn.ing"
 if [ ! -d "$LOG_PATH" ]; then
     mkdir -p "$LOG_PATH"
     echo "폴더를 생성했습니다: $LOG_PATH"
-else
-    echo "폴더가 이미 존재합니다: $LOG_PATH"
 fi
 
 if [ ! -d "$TMP_PATH" ]; then
     mkdir -p "$TMP_PATH"
     echo "폴더를 생성했습니다: $TMP_PATH"
-else
-    echo "폴더가 이미 존재합니다: $TMP_PATH"
 fi
 
 check_ssl_expiry() {
@@ -54,49 +50,58 @@ check_ssl_expiry() {
 
   current_epoch=$(date +%s)
   days_left=$(( (expiry_epoch - current_epoch) / 86400 ))
-  echo "$expiry_date ($days_left일 남음) - $wildcard_status"
+  
+  # 날짜 형식 변환 (GMT -> KST, 요일 추가)
+  expiry_kst=$(LC_ALL=ko_KR.UTF-8 date -d "$expiry_date" "+%m월 %d일 %a")
+  
+  echo "$expiry_kst ($days_left일 남음) $wildcard_status"
 }
 
 # 초기화
 echo "==============================" >> "$LOG"
 echo "스크립트 실행: $(date)" >> "$LOG"
 
-echo "보고서 생성 시간: $(date '+%Y-%m-%d %H:%M:%S %Z')" > "$REPORT"
-echo "" >> "$REPORT"
+# 보고서 파일 초기화
+> "$REPORT"
 
+# 이메일에 사용할 보고서 헤더 작성
+echo "보고서 생성 시간: $(LC_ALL=ko_KR.UTF-8 date '+%A, %m월 %d일 %H:%M:%S KST')" > "$REPORT"
+echo "" >> "$REPORT"
+echo "도메인명                SSL 만료일                남은 일수       인증서 유형" >> "$REPORT"
+echo "-------------------------------------------------------------" >> "$REPORT"
+
+# 각 도메인 처리
 while read -r domain; do
   [ -z "$domain" ] && continue
 
   echo "도메인 처리 중: $domain" >> "$LOG"
 
-  ssl=$(check_ssl_expiry "$domain")
-
-  printf "%-25s SSL: %-35s\n" "$domain" "$ssl" >> "$REPORT"
+  ssl_info=$(check_ssl_expiry "$domain")
+  
+  if [[ "$ssl_info" == "SSL 정보 없음" || "$ssl_info" == "SSL 날짜 파싱 오류" ]]; then
+    printf "%-25s %-25s\n" "$domain" "$ssl_info" >> "$REPORT"
+  else
+    # SSL 정보에서 날짜, 남은 일수, 인증서 유형 추출
+    ssl_date=$(echo "$ssl_info" | awk '{print $1, $2, $3}')
+    days_left=$(echo "$ssl_info" | awk -F'[()]' '{print $2}')
+    wildcard_status=$(echo "$ssl_info" | awk '{for(i=5;i<=NF;i++) printf "%s ", $i}')
+    
+    # 출력 형식 맞추기
+    printf "%-25s %-25s %-15s %s\n" "$domain" "$ssl_date" "$days_left" "$wildcard_status" >> "$REPORT"
+  fi
 done < "$DOMAINS_FILE"
 
 # 이메일 전송
 (
-  echo "Subject: 도메인 상태 보고서"
+  # 날짜 형식 지정 (MM월 DD일 d요일)
+  today=$(LC_ALL=ko_KR.UTF-8 date '+%m월 %d일 %a요일')
+  
+  echo "Subject: [OCI] $today 웹사이트 인증서 상태 보고서"
   echo "To: $EMAIL"
   echo "Content-Type: text/plain; charset=UTF-8"
   echo ""
-  echo "보고서 생성 시간: $(date '+%A, %m월 %d일 %H:%M:%S KST')"  # 요일 포함
-  echo ""
-  echo "도메인명                SSL 만료일                남은 일수       인증서 유형"  # 타이틀 추가
-  echo "-------------------------------------------------------------"
-  
-  while read -r domain; do
-    ssl_info=$(check_ssl_expiry "$domain")
-    # SSL 정보에서 날짜, 남은 일수, 인증서 유형 추출
-    ssl_date=$(echo "$ssl_info" | awk '{print $1, $2, $3}')  # 날짜 부분
-    days_left=$(echo "$ssl_info" | awk '{print $4}')  # 남은 일수 부분
-    wildcard_status=$(echo "$ssl_info" | awk '{print $6, $7}')  # 인증서 유형 부분
-
-    # 출력 형식 맞추기
-    printf "%-25s %-20s %-10s %s\n" "$domain" "$ssl_date" "$days_left" "$wildcard_status" >> "$REPORT"
-  done < "$DOMAINS_FILE"
-  
   cat "$REPORT"
 ) | /usr/sbin/sendmail -t
 
 echo "이메일 전송 완료: $(date)" >> "$LOG"
+echo "로그 파일 위치: $LOG"
