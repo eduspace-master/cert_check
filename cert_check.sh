@@ -58,7 +58,16 @@ check_ssl_expiry() {
 
 check_domain_expiry() {
   local domain=$1
-  expiry_date=$(whois "$domain" | grep -iE 'Expiration Date|Registry Expiry Date|Expires on' | head -n1 | awk -F: '{print $2}' | sed 's/^ *//')
+
+  local tld=$(echo "$domain" | awk -F. '{print $NF}')
+  local whois_server=""
+
+  if [[ "$tld" == "day" || "$tld" == "ing" ]]; then
+    whois_server="whois.nic.google"
+    expiry_date=$(whois -h $whois_server "$domain" | grep -iE 'Expiration Date|Registry Expiry Date|Expires on' | head -n1 | awk -F: '{print $2}' | sed 's/^ *//')
+  else
+    expiry_date=$(whois "$domain" | grep -iE 'Expiration Date|Registry Expiry Date|Expires on' | head -n1 | awk -F: '{print $2}' | sed 's/^ *//')
+  fi
 
   if [ -z "$expiry_date" ]; then
     echo "도메인 만료일 정보 없음"
