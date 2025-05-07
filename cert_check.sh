@@ -8,6 +8,11 @@ REPORT="$TMP_PATH/domain_report.txt"
 LOG="$LOG_PATH/domain_check.log"
 EMAIL="oci@superlearn.ing"
 
+# 날짜 형식 함수 (모든 날짜 형식 통일)
+get_formatted_date() {
+  LC_ALL=ko_KR.UTF-8 date "$@" '+%Y-%m-%d %H:%M %a'
+}
+
 # 폴더가 존재하지 않으면 생성
 if [ ! -d "$LOG_PATH" ]; then
     mkdir -p "$LOG_PATH"
@@ -27,7 +32,7 @@ check_ssl_expiry() {
 
   if [ -z "$expiry_date" ]; then
     echo "SSL 정보 없음"
-    echo "[$(date)] SSL check failed for $domain" >> "$LOG"
+    echo "[$(get_formatted_date)] SSL check failed for $domain" >> "$LOG"
     return
   fi
 
@@ -44,7 +49,7 @@ check_ssl_expiry() {
   expiry_epoch=$(date -d "$expiry_date" +%s 2>/dev/null)
   if [ -z "$expiry_epoch" ]; then
     echo "SSL 날짜 파싱 오류"
-    echo "[$(date)] Failed to parse SSL date for $domain: $expiry_date" >> "$LOG"
+    echo "[$(get_formatted_date)] Failed to parse SSL date for $domain: $expiry_date" >> "$LOG"
     return
   fi
 
@@ -52,20 +57,21 @@ check_ssl_expiry() {
   days_left=$(( (expiry_epoch - current_epoch) / 86400 ))
   
   # 날짜 형식 변환 (GMT -> KST, 요일 추가)
-  expiry_kst=$(LC_ALL=ko_KR.UTF-8 date -d "$expiry_date" "+%m월 %d일 %a")
+  expiry_kst=$(get_formatted_date -d "$expiry_date")
   
   echo "$expiry_kst ($days_left일 남음) $wildcard_status"
 }
 
 # 초기화
 echo "==============================" >> "$LOG"
-echo "스크립트 실행: $(date)" >> "$LOG"
+echo "스크립트 실행: $(get_formatted_date)" >> "$LOG"
 
 # 보고서 파일 초기화
 > "$REPORT"
 
 # 이메일에 사용할 보고서 헤더 작성
-echo "보고서 생성 시간: $(LC_ALL=ko_KR.UTF-8 date '+%A, %m월 %d일 %H:%M:%S KST')" > "$REPORT"
+report_date=$(get_formatted_date)
+echo "보고서 생성 시간: $report_date" > "$REPORT"
 echo "" >> "$REPORT"
 echo "도메인명                SSL 만료일                남은 일수       인증서 유형" >> "$REPORT"
 echo "-------------------------------------------------------------" >> "$REPORT"
@@ -93,8 +99,8 @@ done < "$DOMAINS_FILE"
 
 # 이메일 전송
 (
-  # 날짜 형식 지정 (MM월 DD일 d요일)
-  today=$(LC_ALL=ko_KR.UTF-8 date '+%m월 %d일 %a요일')
+  # 날짜 형식 지정
+  today=$(get_formatted_date)
   
   echo "Subject: [OCI] $today 웹사이트 인증서 상태 보고서"
   echo "To: $EMAIL"
@@ -103,5 +109,5 @@ done < "$DOMAINS_FILE"
   cat "$REPORT"
 ) | /usr/sbin/sendmail -t
 
-echo "이메일 전송 완료: $(date)" >> "$LOG"
+echo "이메일 전송 완료: $(get_formatted_date)" >> "$LOG"
 echo "로그 파일 위치: $LOG"
