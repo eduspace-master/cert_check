@@ -4,7 +4,7 @@ mail.class.day
 dev.class.day
 superlearn.ing
 supercoding.net
-ondo.live
+on-do.live
 admin.class.day
 admin-dev.class.day
 webview.class.day
