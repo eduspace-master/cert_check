@@ -55,28 +55,6 @@ check_ssl_expiry() {
   days_left=$(( (expiry_epoch - current_epoch) / 86400 ))
   echo "$expiry_date ($days_left일 남음)"
 }
-
-check_domain_expiry() {
-  local domain=$1
-  expiry_date=$(whois "$domain" | grep -iE 'Expiration Date|Registry Expiry Date|Expires on' | head -n1 | awk -F: '{print $2}' | sed 's/^ *//')
-
-  if [ -z "$expiry_date" ]; then
-    echo "도메인 만료일 정보 없음"
-    echo "[$(date)] Whois 만료일 조회 실패: $domain" >> "$LOG"
-    return
-  fi
-
-  expiry_epoch=$(date -d "$expiry_date" +%s 2>/dev/null)
-  if [ -z "$expiry_epoch" ]; then
-    echo "WHOIS 날짜 파싱 오류"
-    echo "[$(date)] Whois 날짜 파싱 실패: $domain - $expiry_date" >> "$LOG"
-    return
-  fi
-
-  current_epoch=$(date +%s)
-  days_left=$(( (expiry_epoch - current_epoch) / 86400 ))
-  echo "$expiry_date ($days_left일 남음)"
-}
 # 초기화
 echo "==============================" >> "$LOG"
 echo "스크립트 실행: $(date)" >> "$LOG"
@@ -91,9 +69,8 @@ while read -r domain; do
 
   health=$(check_health "$domain")
   ssl=$(check_ssl_expiry "$domain")
-  domain_expiry=$(check_domain_expiry "$domain")
 
-  printf "%-25s %-10s SSL: %-35s 도메인 만료일: %s\n" "$domain" "$health" "$ssl" "$domain_expiry" >> "$REPORT"
+  printf "%-25s %-10s SSL: %-35s\n" "$domain" "$health" "$ssl" >> "$REPORT"
 done < "$DOMAINS_FILE"
 
 # 이메일 전송
