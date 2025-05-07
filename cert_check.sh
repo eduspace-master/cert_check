@@ -74,8 +74,8 @@ echo "스크립트 실행: $(get_formatted_date)" >> "$LOG"
 report_date=$(get_formatted_date)
 echo "보고서 생성 시간: $report_date" > "$REPORT"
 echo "" >> "$REPORT"
-echo "도메인명                SSL 만료일                남은 일수       인증서 유형" >> "$REPORT"
-echo "-------------------------------------------------------------" >> "$REPORT"
+echo "도메인명                      SSL 만료일                남은 일수   인증서 유형" >> "$REPORT"
+echo "----------------------------------------------------------------------" >> "$REPORT"
 
 # 각 도메인 처리
 while read -r domain; do
