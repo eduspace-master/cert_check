@@ -59,7 +59,8 @@ check_ssl_expiry() {
   # 날짜 형식 변환 (GMT -> KST, 요일 추가)
   expiry_kst=$(get_formatted_date -d "$expiry_date")
   
-  echo "$expiry_kst ($days_left일 남음) $wildcard_status"
+  # 반환 형식 변경 - 각 필드를 탭으로 구분해서 후처리가 쉽도록 함
+  echo -e "$expiry_kst\t$days_left\t$wildcard_status"
 }
 
 # 초기화
@@ -87,13 +88,13 @@ while read -r domain; do
   if [[ "$ssl_info" == "SSL 정보 없음" || "$ssl_info" == "SSL 날짜 파싱 오류" ]]; then
     printf "%-25s %-25s\n" "$domain" "$ssl_info" >> "$REPORT"
   else
-    # SSL 정보에서 날짜, 남은 일수, 인증서 유형 추출
-    ssl_date=$(echo "$ssl_info" | awk '{print $1, $2, $3}')
-    days_left=$(echo "$ssl_info" | awk -F'[()]' '{print $2}')
-    wildcard_status=$(echo "$ssl_info" | awk '{for(i=5;i<=NF;i++) printf "%s ", $i}')
+    # 탭으로 구분된 필드를 읽음
+    ssl_date=$(echo "$ssl_info" | cut -f1)
+    days_left=$(echo "$ssl_info" | cut -f2)
+    wildcard_status=$(echo "$ssl_info" | cut -f3-)
     
     # 출력 형식 맞추기
-    printf "%-25s %-25s %-15s %s\n" "$domain" "$ssl_date" "$days_left" "$wildcard_status" >> "$REPORT"
+    printf "%-25s %-25s %-15s %s\n" "$domain" "$ssl_date" "$days_left일 남음" "$wildcard_status" >> "$REPORT"
   fi
 done < "$DOMAINS_FILE"
 
@@ -102,7 +103,7 @@ done < "$DOMAINS_FILE"
   # 날짜 형식 지정
   today=$(get_formatted_date)
   
-  echo "Subject: [OCI] $today 웹사이트 인증서 상태 보고서"
+  echo "Subject: [인프라] $today 웹사이트 인증서 상태 보고서"
   echo "To: $EMAIL"
   echo "Content-Type: text/plain; charset=UTF-8"
   echo ""
