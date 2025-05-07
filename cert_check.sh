@@ -6,7 +6,7 @@ TMP_PATH="$HOME/cert_check/tmp"
 DOMAINS_FILE="$HOME/cert_check/domain-list.txt"
 REPORT="$TMP_PATH/domain_report.txt"
 LOG="$LOG_PATH/domain_check.log"
-EMAIL="oci@superlearn.ing"
+EMAIL="infra@superlearn.ing"
 
 # 날짜 형식 함수 (모든 날짜 형식 통일)
 get_formatted_date() {
