@@ -1,11 +1,12 @@
-class.day
-blog.class.day
-mail.class.day
-dev.class.day
-superlearn.ing
-supercoding.net
-on-do.live
-admin.class.day
-admin-dev.class.day
-webview.class.day
-webview-dev.class.day
+# 도메인명          설치방법          ZONE_OCID
+class.day           oci_instance_nginx ocid1.dnszone.oc1..exampleuniqueID1
+blog.class.day      oci_lb             ocid1.dnszone.oc1..exampleuniqueID2
+mail.class.day      oci_instance_nginx ocid1.dnszone.oc1..exampleuniqueID3
+dev.class.day       oci_lb             ocid1.dnszone.oc1..exampleuniqueID4
+superlearn.ing      oci_instance_nginx ocid1.dnszone.oc1..exampleuniqueID5
+supercoding.net     oci_lb             ocid1.dnszone.oc1..exampleuniqueID6
+on-do.live          oci_instance_nginx ocid1.dnszone.oc1..exampleuniqueID7
+admin.class.day     oci_lb             ocid1.dnszone.oc1..exampleuniqueID8
+admin-dev.class.day oci_instance_nginx ocid1.dnszone.oc1..exampleuniqueID9
+webview.class.day   oci_lb             ocid1.dnszone.oc1..exampleuniqueID10
+webview-dev.class.day oci_instance_nginx ocid1.dnszone.oc1..exampleuniqueID11
